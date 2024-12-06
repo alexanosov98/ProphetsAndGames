@@ -25,26 +25,19 @@ training_labels = np.array(data['train_set'])
 testing_labels = np.array(data['test_set'])
 
 
-def ERM(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int, is_scenario_five: bool) -> tuple[int, float]:
+#todo remove redundant paramter later
+def ERM(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int) -> int:
     """
-        Receives the predictions of each prophet, number of games the prophets are being evaluated on, number of times
-        to repeat the experiment and returns the best prophet after evaluating via ERM for the given number of repetitions.
-        """
-
-    if is_scenario_five:
-        prophets_indexes = np.random.randint(0, )
-    correct_predictions = np.zeros(num_of_prophets)
+    Receives the predictions of each prophet, number of games the prophets are being evaluated on, number of times
+    to repeat the experiment and returns the best prophet after evaluating via ERM for the given number of repetitions.
+    """
+    correct_predictions = np.zeros(len(training_sets)) #TODO changed from range(num_of_prophets)
 
     for j in range(num_of_games):
         random_game = np.random.randint(0, TRAIN_SET_SIZE)
-        #Randomly choose prophets
-        if is_scenario_five:
-
-        #Iterate over prophets provided in the relevant pkl file
-        else:
-            for prophet_idx in range(num_of_prophets):
-                if training_sets[prophet_idx][random_game] == training_labels[random_game]:
-                    correct_predictions[prophet_idx] += 1
+        for prophet_idx in range(len(training_sets)): #TODO changed from range(num_of_prophets), depends what len(training_sets) is
+            if training_sets[prophet_idx][random_game] == training_labels[random_game]:
+                correct_predictions[prophet_idx] += 1
 
 
     best_prophets = np.where(correct_predictions == np.max(correct_predictions))[0]
@@ -70,10 +63,6 @@ def create_table(data: NumpyArray, M, K) -> None:
 
     :return:
     """
-    # stringed_data = np.ndarray(data.shape, dtype = str)
-    # for i in range(len(data)):
-    #     for j in range(len(data[i])):
-    #         stringed_data[i] = "Mean average error: " + str(data[i][j][0]) + '%' + '\n' + "Mean approximation error: " + str(data[i][j][1]) + '%' + '\n' + "Mean estimation error: " + str(data[i][j][2]) + '%'
 
     #Giving some context to the data to display it more informatively
     stringed_data = np.empty(data.shape, dtype=object)
@@ -82,6 +71,7 @@ def create_table(data: NumpyArray, M, K) -> None:
             values = data[i, j]
             stringed_data[i, j] = f"Mean average error: {values[0]}% \n Mean approximation error: {values[1]}% \n Mean estimated error: {values[2]}%"
 
+    #Start plotting
     fig, ax = plt.subplots(figsize = (12,8))
     row_labels = [f"m = {M[i]}" for i in range(len(M))]
     column_labels = [f"k = {K[i]}" for i in range(len(K))]
@@ -89,7 +79,6 @@ def create_table(data: NumpyArray, M, K) -> None:
     ax.axis('off')
     table = ax.table(cellText = stringed_data, rowLabels = row_labels, colLabels = column_labels, loc = 'center',
                          cellLoc = 'center')
-
     #Adjusting cell sizes
     cell_size = 0.2
     table.auto_set_column_width([i for i in range(len(K))])
@@ -105,18 +94,17 @@ def create_table(data: NumpyArray, M, K) -> None:
     plt.show()
 
 
-
-def run_experiments(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int, num_of_repetitions: int, test_sets : NumpyArray, true_risks: NumpyArray, is_scenario_five: bool) -> NumpyArray:
+#Todo remove redundant paramter later
+def run_experiments(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int, num_of_repetitions: int, test_sets : NumpyArray, true_risks: NumpyArray) -> NumpyArray:
     """"""
     chose_the_best_prophet = 0
     total_estimation_error = 0
     total_average_error = 0
     not_1_percent_worse = 0
-    approximation_error = 0
+    approximation_error = np.min(true_risks)
 
-    approximation_error = np.min(true_risks) #TODO not good for scenario 5
     for i in range(NUM_OF_EXPERIMENTS):
-        best_prophet, approximation_error = ERM(training_sets, num_of_games, num_of_prophets)
+        best_prophet = ERM(training_sets, num_of_games, num_of_prophets)
         best_prophet_test_set = test_sets[best_prophet]
         average_error = evaluate_and_calculate_average_error(best_prophet_test_set)
         total_average_error += average_error
@@ -128,14 +116,14 @@ def run_experiments(training_sets: NumpyArray, num_of_games: int, num_of_prophet
             chose_the_best_prophet += 1
 
         #Uncomment to print the average error, approximation error and estimation error of the current experiment
-            # print("Experiment number " + str(i+1) + ":")
-            # print("The selected prophets error is: " + str(average_error * 100) + "%")
-            # print("The approximation error is: " + str(approximation_error * 100) + "%")
-            # print("The estimation error is: " + str(estimation_error * 100) + "%\n")
+        # print("Experiment number " + str(i+1) + ":")
+        # print("The selected prophets error is: " + str(average_error * 100) + "%")
+        # print("The approximation error is: " + str(approximation_error * 100) + "%")
+        # print("The estimation error is: " + str(estimation_error * 100) + "%\n")
 
         if i == NUM_OF_EXPERIMENTS - 1:
             mean_average_error = total_average_error*100/NUM_OF_EXPERIMENTS
-            mean_approximation_error = approximation_error * 100 #TODO might change in scenario 5
+            mean_approximation_error = approximation_error * 100
             mean_estimation_error = total_estimation_error*100/NUM_OF_EXPERIMENTS
 
             #Uncomment to print the mean average error/ approximation error/ estimation error
@@ -246,9 +234,11 @@ def Scenario_5():
     for m in M:
         j=0
         for k in K:
+            #Randomly choose k prophets
             rand_prophets_idxs = np.random.randint(0, len(true_risks), size = k)
 
-            table[i][j] = run_experiments(training_sets[rand_prophets_idxs], m, k, NUM_OF_EXPERIMENTS, test_sets, true_risks)
+            table[i][j] = run_experiments(training_sets[rand_prophets_idxs], m, k, NUM_OF_EXPERIMENTS,
+                                          test_sets[rand_prophets_idxs], true_risks[rand_prophets_idxs])
 
             print("k = " + str(k) + " and m = " + str(m) + ":")
             print("The mean average error is: " + str(table[i][j][0]))
@@ -257,13 +247,6 @@ def Scenario_5():
             j += 1
 
         i += 1
-
-    # for k in K:
-    #     for m in M:
-    #         print("For " + str(k) + " random prophets and " + str(m) + "randomly sampled games:")
-    #         print("The mean average error is: " + str(table[k][m][0]))
-    #         print("The mean approximation error is: " + str(table[k][m][1]))
-    #         print("The mean estimation error is: " + str(table[k][m][2]) + "\n")
 
     create_table(table, M, K)
 
