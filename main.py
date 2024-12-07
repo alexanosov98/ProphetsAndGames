@@ -23,11 +23,11 @@ def ERM(training_sets: NumpyArray, num_of_games: int) -> int:
     Receives the predictions of each prophet, number of games the prophets are being evaluated on, number of times
     to repeat the experiment and returns the best prophet after evaluating via ERM for the given number of repetitions.
     """
-    correct_predictions = np.zeros(len(training_sets)) #TODO changed from range(num_of_prophets)
+    correct_predictions = np.zeros(len(training_sets))
 
     for j in range(num_of_games):
         random_game = np.random.randint(0, TRAIN_SET_SIZE)
-        for prophet_idx in range(len(training_sets)): #TODO changed from range(num_of_prophets), depends what len(training_sets) is
+        for prophet_idx in range(len(training_sets)):
             if training_sets[prophet_idx][random_game] == training_labels[random_game]:
                 correct_predictions[prophet_idx] += 1
 
@@ -48,7 +48,6 @@ def evaluate_and_calculate_average_error(testing_set: NumpyArray) -> float:
     return ((1 / TEST_SET_SIZE) * (np.sum(testing_set ^ testing_labels == True)))
 
 
-#TODO correct the parameter types
 def plot_table(data: NumpyArray, M, K) -> None:
     """
     Plots an m*k sized table presenting the data provided.
