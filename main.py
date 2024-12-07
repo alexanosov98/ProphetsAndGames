@@ -2,13 +2,6 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-####TODO NOTES TO TAKE CARE OF LATER
-# See where you can optimize by using numpy functions
-# define parameter types
-# documentation
-
-
-
 #Typedef
 NumpyArray = np.ndarray
 
@@ -23,7 +16,6 @@ with open('data.pkl', 'rb') as file:
     data = pickle.load(file)
 training_labels = np.array(data['train_set'])
 testing_labels = np.array(data['test_set'])
-
 
 
 def ERM(training_sets: NumpyArray, num_of_games: int) -> int:
@@ -47,12 +39,11 @@ def ERM(training_sets: NumpyArray, num_of_games: int) -> int:
     return int(best_prophets[0])
 
 
-
 def evaluate_and_calculate_average_error(testing_set: NumpyArray) -> float:
     """
-        Returns the average error of the testing set provided when compared to the testing labels by summing all the
-        corresponding samples in the arrays that are different from each other and dividing by the number of the samples.
-        """
+    Returns the average error of the testing set provided when compared to the testing labels by summing all the
+    corresponding samples in the arrays that are different from each other and dividing by the number of the samples.
+    """
 
     return ((1 / TEST_SET_SIZE) * (np.sum(testing_set ^ testing_labels == True)))
 
@@ -60,8 +51,7 @@ def evaluate_and_calculate_average_error(testing_set: NumpyArray) -> float:
 #TODO correct the parameter types
 def plot_table(data: NumpyArray, M, K) -> None:
     """
-
-    :return:
+    Plots an m*k sized table presenting the data provided.
     """
 
     #Giving some context to the data to display it more informatively
@@ -94,9 +84,14 @@ def plot_table(data: NumpyArray, M, K) -> None:
     plt.show()
 
 
-#Todo remove redundant paramter later
 def run_experiments(training_sets: NumpyArray, num_of_games: int, test_sets: NumpyArray, true_risks: NumpyArray, scenario_6: bool) -> NumpyArray:
-    """"""
+    """
+    Runs the experiments NUM_OF_EXPERIMENTS times, every time choosing the best prophet via ERM and calculating the
+    different errors.
+    return: scenario 1-5, returns the mean errors computed, for scenario 6 returns just the estimated errors through out
+    the different experiments.
+    """
+
     chose_the_best_prophet = 0
     total_estimation_error = 0
     total_average_error = 0
@@ -118,18 +113,15 @@ def run_experiments(training_sets: NumpyArray, num_of_games: int, test_sets: Num
             not_1_percent_worse += 1
         if not estimation_error:
             chose_the_best_prophet += 1
-
         #Uncomment to print the average error, approximation error and estimation error of the current experiment
         # print("Experiment number " + str(i+1) + ":")
         # print("The selected prophets error is: " + str(average_error * 100) + "%")
         # print("The approximation error is: " + str(approximation_error * 100) + "%")
         # print("The estimation error is: " + str(estimation_error * 100) + "%\n")
-
         if i == NUM_OF_EXPERIMENTS - 1:
             mean_average_error = total_average_error*100/NUM_OF_EXPERIMENTS
             mean_approximation_error = approximation_error * 100
             mean_estimation_error = total_estimation_error*100/NUM_OF_EXPERIMENTS
-
             #Uncomment to print the mean average error/ approximation error/ estimation error
             print("Experiments done, the best prophet was chosen " + str(chose_the_best_prophet) + " times out of " +
                   str(NUM_OF_EXPERIMENTS) + " experiments.")
@@ -138,47 +130,37 @@ def run_experiments(training_sets: NumpyArray, num_of_games: int, test_sets: Num
             print("The mean estimation error is: " + str(mean_estimation_error) + "%")
             print("We chose a prophet that was not 1% worse than the best prophet " + str(not_1_percent_worse) +
                   " times out of " + str(NUM_OF_EXPERIMENTS) + " experiments.")
-
             if scenario_6:
                 return estimated_errors
             return np.array([mean_average_error, mean_approximation_error, mean_estimation_error])
 
 
-
 def plot_histogram(hypothesis1_estimated_errors, hypothesis2_estimated_errors) -> None:
     """
-    return:
+    Plots a histogram presenting the different estimated errors and their occurrences for every hypothesis class.
     """
-    # Compute unique values and occurrences
     unique_values1, occurrences1 = np.unique(hypothesis1_estimated_errors, return_counts=True)
     unique_values2, occurrences2 = np.unique(hypothesis2_estimated_errors, return_counts=True)
 
-    # Define bar width
     width = 0.4
 
-    # Align x-values for side-by-side plotting
     all_unique_values = np.union1d(unique_values1, unique_values2)
-    x1_indices = np.arange(len(all_unique_values))  # Indices for unique values
-    x2_indices = x1_indices + width  # Offset for second set
+    x1_indices = np.arange(len(all_unique_values))
+    x2_indices = x1_indices + width
 
-    # Map occurrences to the aligned indices
     counts1 = [occurrences1[np.where(unique_values1 == val)[0][0]] if val in unique_values1 else 0 for val in
                all_unique_values]
     counts2 = [occurrences2[np.where(unique_values2 == val)[0][0]] if val in unique_values2 else 0 for val in
                all_unique_values]
 
-
-    # Plot bars
     plt.bar(x1_indices, counts1, width=width, color='skyblue', label='Hypothesis 1', align='center')
     plt.bar(x2_indices, counts2, width=width, color='orange', label='Hypothesis 2', align='center')
 
-    # Add labels and legend
     plt.xlabel("Estimation error of chosen prophet")
     plt.ylabel("Number of occurrences")
     plt.title("Comparison of Hypotheses Estimation Errors")
     plt.legend()
 
-    # Show plot
     plt.savefig("histogram_plot.png", dpi=300, bbox_inches='tight')
     plt.show()
 
@@ -265,7 +247,6 @@ def Scenario_5():
     true_risks = np.array(scenario['true_risk'])
     test_sets = np.array(scenario['test_set'])
     training_sets = np.array(scenario['train_set'])
-
     #Table initialization
     table = np.empty((len(K), len(M)), dtype = object)
     #Filling the table
@@ -322,25 +303,22 @@ def Scenario_6():
 if __name__ == '__main__':
     
 
-    # print(f'Scenario 1 Results:')
-    # Scenario_1()
+    print(f'Scenario 1 Results:')
+    Scenario_1()
 
-    # print(f'Scenario 2 Results:')
-    # Scenario_2()
-    #
-    # print(f'Scenario 3 Results:')
-    # Scenario_3()
-    #
-    # print(f'Scenario 4 Results:')
-    # Scenario_4()
-    #
-    # print(f'Scenario 5 Results:')
-    # Scenario_5()
-    #
+    print(f'Scenario 2 Results:')
+    Scenario_2()
+
+    print(f'Scenario 3 Results:')
+    Scenario_3()
+
+    print(f'Scenario 4 Results:')
+    Scenario_4()
+
+    print(f'Scenario 5 Results:')
+    Scenario_5()
+
     print(f'Scenario 6 Results:')
     Scenario_6()
 
-    # M = [1, 10, 50, 1000]
-    # K = [2, 5, 10, 50]
-    # create_histogram(np.random.rand(4, 4), M, K)
 
