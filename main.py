@@ -25,8 +25,8 @@ training_labels = np.array(data['train_set'])
 testing_labels = np.array(data['test_set'])
 
 
-#todo remove redundant paramter later
-def ERM(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int) -> int:
+
+def ERM(training_sets: NumpyArray, num_of_games: int) -> int:
     """
     Receives the predictions of each prophet, number of games the prophets are being evaluated on, number of times
     to repeat the experiment and returns the best prophet after evaluating via ERM for the given number of repetitions.
@@ -44,7 +44,7 @@ def ERM(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int) -> i
     if len(best_prophets) > 1:
         random_idx = np.floor(np.random.uniform(0, len(best_prophets)))
         return best_prophets[int(random_idx)]
-    return int(best_prophets[0])  # todo why the cast?
+    return int(best_prophets[0])
 
 
 
@@ -54,11 +54,11 @@ def evaluate_and_calculate_average_error(testing_set: NumpyArray) -> float:
         corresponding samples in the arrays that are different from each other and dividing by the number of the samples.
         """
 
-    return ((1 / TEST_SET_SIZE) * (np.sum(testing_set ^ testing_labels == True)))  ##TODO CHANGED!!!!!!
+    return ((1 / TEST_SET_SIZE) * (np.sum(testing_set ^ testing_labels == True)))
 
 
 #TODO correct the parameter types
-def create_table(data: NumpyArray, M, K) -> None:
+def plot_table(data: NumpyArray, M, K) -> None:
     """
 
     :return:
@@ -69,7 +69,7 @@ def create_table(data: NumpyArray, M, K) -> None:
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             values = data[i, j]
-            stringed_data[i, j] = f"Mean average error: {values[0]}% \n Mean approximation error: {values[1]}% \n Mean estimated error: {values[2]}%"
+            stringed_data[i, j] = f"Mean average error: {values[0]}% \n Mean approximation error: {values[1]}% \n Mean estimation error: {values[2]}%"
 
     #Start plotting
     fig, ax = plt.subplots(figsize = (12,8))
@@ -95,20 +95,24 @@ def create_table(data: NumpyArray, M, K) -> None:
 
 
 #Todo remove redundant paramter later
-def run_experiments(training_sets: NumpyArray, num_of_games: int, num_of_prophets: int, num_of_repetitions: int, test_sets : NumpyArray, true_risks: NumpyArray) -> NumpyArray:
+def run_experiments(training_sets: NumpyArray, num_of_games: int, test_sets: NumpyArray, true_risks: NumpyArray, scenario_6: bool) -> NumpyArray:
     """"""
     chose_the_best_prophet = 0
     total_estimation_error = 0
     total_average_error = 0
     not_1_percent_worse = 0
     approximation_error = np.min(true_risks)
+    if scenario_6:
+        estimated_errors = np.ndarray(NUM_OF_EXPERIMENTS)
 
     for i in range(NUM_OF_EXPERIMENTS):
-        best_prophet = ERM(training_sets, num_of_games, num_of_prophets)
+        best_prophet = ERM(training_sets, num_of_games)
         best_prophet_test_set = test_sets[best_prophet]
         average_error = evaluate_and_calculate_average_error(best_prophet_test_set)
         total_average_error += average_error
         estimation_error = true_risks[best_prophet] - approximation_error
+        if scenario_6:
+            estimated_errors[i] = estimation_error
         total_estimation_error += estimation_error
         if estimation_error < ONE_PERCENT :
             not_1_percent_worse += 1
@@ -127,17 +131,56 @@ def run_experiments(training_sets: NumpyArray, num_of_games: int, num_of_prophet
             mean_estimation_error = total_estimation_error*100/NUM_OF_EXPERIMENTS
 
             #Uncomment to print the mean average error/ approximation error/ estimation error
-            # print("Experiments done, the best prophet was chosen " + str(chose_the_best_prophet) + " times out of " +
-            #       str(num_of_repetitions) + " experiments.")
-            # print("The mean average error is: " + str(mean_average_error) + "%")
-            # print("The mean approximation error is: " + str(mean_approximation_error) + "%")
-            # print("The mean estimation error is: " + str(mean_estimation_error) + "%")
-            # print("We chose a prophet that was not 1% worse than the best prophet " + str(not_1_percent_worse) +
-            #       " times out of " + str(num_of_repetitions) + " experiments.")
+            print("Experiments done, the best prophet was chosen " + str(chose_the_best_prophet) + " times out of " +
+                  str(NUM_OF_EXPERIMENTS) + " experiments.")
+            print("The mean average error is: " + str(mean_average_error) + "%")
+            print("The mean approximation error is: " + str(mean_approximation_error) + "%")
+            print("The mean estimation error is: " + str(mean_estimation_error) + "%")
+            print("We chose a prophet that was not 1% worse than the best prophet " + str(not_1_percent_worse) +
+                  " times out of " + str(NUM_OF_EXPERIMENTS) + " experiments.")
 
+            if scenario_6:
+                return estimated_errors
             return np.array([mean_average_error, mean_approximation_error, mean_estimation_error])
 
 
+
+def plot_histogram(hypothesis1_estimated_errors, hypothesis2_estimated_errors) -> None:
+    """
+    return:
+    """
+    # Compute unique values and occurrences
+    unique_values1, occurrences1 = np.unique(hypothesis1_estimated_errors, return_counts=True)
+    unique_values2, occurrences2 = np.unique(hypothesis2_estimated_errors, return_counts=True)
+
+    # Define bar width
+    width = 0.4
+
+    # Align x-values for side-by-side plotting
+    all_unique_values = np.union1d(unique_values1, unique_values2)
+    x1_indices = np.arange(len(all_unique_values))  # Indices for unique values
+    x2_indices = x1_indices + width  # Offset for second set
+
+    # Map occurrences to the aligned indices
+    counts1 = [occurrences1[np.where(unique_values1 == val)[0][0]] if val in unique_values1 else 0 for val in
+               all_unique_values]
+    counts2 = [occurrences2[np.where(unique_values2 == val)[0][0]] if val in unique_values2 else 0 for val in
+               all_unique_values]
+
+
+    # Plot bars
+    plt.bar(x1_indices, counts1, width=width, color='skyblue', label='Hypothesis 1', align='center')
+    plt.bar(x2_indices, counts2, width=width, color='orange', label='Hypothesis 2', align='center')
+
+    # Add labels and legend
+    plt.xlabel("Estimation error of chosen prophet")
+    plt.ylabel("Number of occurrences")
+    plt.title("Comparison of Hypotheses Estimation Errors")
+    plt.legend()
+
+    # Show plot
+    plt.savefig("histogram_plot.png", dpi=300, bbox_inches='tight')
+    plt.show()
 
 
 def Scenario_1():
@@ -147,7 +190,6 @@ def Scenario_1():
     You may change the input & output parameters of the function as you wish.
     """
     ############### YOUR CODE GOES HERE ###############
-    num_of_prophets = 2
     num_of_games = 1
     with open('scenario_one_and_two_prophets.pkl', 'rb') as file:
         scenario = pickle.load(file)
@@ -155,7 +197,7 @@ def Scenario_1():
     test_sets = np.array(scenario['test_set'])
     training_sets = np.array(scenario['train_set'])
 
-    run_experiments(training_sets, num_of_games, num_of_prophets, NUM_OF_EXPERIMENTS, test_sets, true_risks)
+    run_experiments(training_sets, num_of_games, test_sets, true_risks, False)
 
 
 def Scenario_2():
@@ -165,7 +207,6 @@ def Scenario_2():
     You may change the input & output parameters of the function as you wish.
     """
     ############### YOUR CODE GOES HERE ###############
-    num_of_prophets = 2
     num_of_games = 10
     with open('scenario_one_and_two_prophets.pkl', 'rb') as file:
         scenario = pickle.load(file)
@@ -173,7 +214,7 @@ def Scenario_2():
     test_sets = np.array(scenario['test_set'])
     training_sets = np.array(scenario['train_set'])
 
-    run_experiments(training_sets, num_of_games, num_of_prophets, NUM_OF_EXPERIMENTS, test_sets, true_risks)
+    run_experiments(training_sets, num_of_games, test_sets, true_risks, False)
 
 
 def Scenario_3():
@@ -183,7 +224,6 @@ def Scenario_3():
     You may change the input & output parameters of the function as you wish.
     """
     ############### YOUR CODE GOES HERE ###############
-    num_of_prophets = 500
     num_of_games = 10
     with open('scenario_three_and_four_prophets.pkl', 'rb') as file:
         scenario = pickle.load(file)
@@ -191,7 +231,7 @@ def Scenario_3():
     test_sets = np.array(scenario['test_set'])
     training_sets = np.array(scenario['train_set'])
 
-    run_experiments(training_sets, num_of_games, num_of_prophets, NUM_OF_EXPERIMENTS, test_sets, true_risks)
+    run_experiments(training_sets, num_of_games, test_sets, true_risks, False)
 
 def Scenario_4():
     """
@@ -200,7 +240,6 @@ def Scenario_4():
     You may change the input & output parameters of the function as you wish.
     """
     ############### YOUR CODE GOES HERE ###############
-    num_of_prophets = 500
     num_of_games = 1000
     with open('scenario_three_and_four_prophets.pkl', 'rb') as file:
         scenario = pickle.load(file)
@@ -208,7 +247,7 @@ def Scenario_4():
     test_sets = np.array(scenario['test_set'])
     training_sets = np.array(scenario['train_set'])
 
-    run_experiments(training_sets, num_of_games, num_of_prophets, NUM_OF_EXPERIMENTS, test_sets, true_risks)
+    run_experiments(training_sets, num_of_games, test_sets, true_risks, False)
 
 
 def Scenario_5():
@@ -237,8 +276,8 @@ def Scenario_5():
             #Randomly choose k prophets
             rand_prophets_idxs = np.random.randint(0, len(true_risks), size = k)
 
-            table[i][j] = run_experiments(training_sets[rand_prophets_idxs], m, k, NUM_OF_EXPERIMENTS,
-                                          test_sets[rand_prophets_idxs], true_risks[rand_prophets_idxs])
+            table[i][j] = run_experiments(training_sets[rand_prophets_idxs], m, test_sets[rand_prophets_idxs],
+                                          true_risks[rand_prophets_idxs], False)
 
             print("k = " + str(k) + " and m = " + str(m) + ":")
             print("The mean average error is: " + str(table[i][j][0]))
@@ -248,7 +287,7 @@ def Scenario_5():
 
         i += 1
 
-    create_table(table, M, K)
+    plot_table(table, M, K)
 
 
 def Scenario_6():
@@ -258,8 +297,27 @@ def Scenario_6():
     You may change the input & output parameters of the function as you wish.
     """
     ############### YOUR CODE GOES HERE ###############
-    pass
+    num_of_games = 1000
+    with open('scenario_six_prophets.pkl', 'rb') as file:
+        scenario = pickle.load(file)
+    hypothesis1 = scenario['hypothesis1']
+    hypothesis2 = scenario['hypothesis2']
+    hypothesis1_training_sets = hypothesis1['train_set']
+    hypothesis1_testing_sets = hypothesis1['test_set']
+    hypothesis2_training_sets = hypothesis2['train_set']
+    hypothesis2_testing_sets = hypothesis2['test_set']
+    hypothesis1_true_risks = hypothesis1['true_risk']
+    hypothesis2_true_risks = hypothesis2['true_risk']
 
+    print('Hypothesis 1:')
+    hypothesis1_estimated_errors = run_experiments(hypothesis1_training_sets, num_of_games, hypothesis1_testing_sets,
+                                          hypothesis1_true_risks, True)
+    print('Hypothesis 2:')
+    hypothesis2_estimated_errors = run_experiments(hypothesis2_training_sets, num_of_games, hypothesis2_testing_sets,
+                                          hypothesis2_true_risks, True)
+
+
+    plot_histogram(hypothesis1_estimated_errors, hypothesis2_estimated_errors)
 
 if __name__ == '__main__':
     
@@ -276,11 +334,11 @@ if __name__ == '__main__':
     # print(f'Scenario 4 Results:')
     # Scenario_4()
     #
-    print(f'Scenario 5 Results:')
-    Scenario_5()
+    # print(f'Scenario 5 Results:')
+    # Scenario_5()
     #
-    # print(f'Scenario 6 Results:')
-    # Scenario_6()
+    print(f'Scenario 6 Results:')
+    Scenario_6()
 
     # M = [1, 10, 50, 1000]
     # K = [2, 5, 10, 50]
